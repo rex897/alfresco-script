@@ -33,9 +33,9 @@ fi
 echo "${GREEN}Утилита wget уже установлена ${NORMAL}${NEWLINE}$(brew list wget > /dev/null)" || echo "${YELLOW}Установка wget для загрузки образа Alfresco ${NORMAL} ${NEWLINE}$(brew install wget)" 
 
 # ---------------------------------------------------
-# Проверка установлена ли утилита pv (prorgess bar)
+# Проверка установлена ли утилита psql (postgresql
 # ---------------------------------------------------
-echo "${GREEN}Утилита pv уже установлена ${NORMAL}${NEWLINE}$(brew list pv > /dev/null)" || echo "${YELLOW}Установка pv ${NORMAL}${NEWLINE}$(brew install pv)"
+echo "${GREEN}Утилита pv уже установлена ${NORMAL}${NEWLINE}$(brew list psql > /dev/null)" || echo "${YELLOW}Установка psql ${NORMAL}${NEWLINE}$(brew install psql)"
 
 echo "${GREEN}Текущая директория: $(pwd) ${NORMAL} ${NEWLINE}"
 
@@ -131,6 +131,8 @@ rm -rf ${ALF_DATA_HOME}/solr4/model
 
 # Установить сервис «Бизнес-журнал», выполнив действия, описанные в документе «Инструкция по установке Бизнес-журнала».
 
+echo "${YELLOW}Установка Бизнес-журнала ${NORMAL}"
+
 cp -R ./alfresco/businessjournal.war ${CATALINA_HOME}/webapps
 cd ${CATALINA_HOME}/webapps
 jar -xvf businessjournal.war
@@ -148,8 +150,27 @@ jar -cvf businessjournal.war WEB-INF META-INF
 rm -rf WEB-INF META-INF name pass host
 # под вопросом удаление файла .bak
 
+echo "${GREEN}Бизнес-журнал установлен ${NORMAL}"
+
 # Установить сервис «Хранилище уведомлений», выполнив действия, описанные в документе «Инструкция по установке хранилища уведомлений».
 
+echo "${YELLOW}Установка Хранилища уведомлений ${NORMAL}"
+
+# psql –U postgres
+# CREATE DATABASE notifications WITH OWNER = alfresco ENCODING = 'UTF8' TABLESPACE = pg_default LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8' CONNECTION LIMIT = -1;
+
+cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+
+notificationstore.datanucleus.dbms=postgres
+notificationstore.datanucleus.ConnectionDriverName=org.postgresql.Driver
+notificationstore.datanucleus.ConnectionURL=jdbc:postgresql://${DB_HOST}:5432/notifications
+notificationstore.datanucleus.ConnectionUserName=alfresco
+notificationstore.datanucleus.ConnectionPassword=admin
+notificationstore.datanucleus.generateSchema.database.mode=create
+notificationstore.brokerURL=tcp://127.0.0.1:61616
+EOL
+
+echo "${GREEN}Хранилище уведомлений установлено ${NORMAL}"
 
 # Установить модуль удаленной печати, выполнив действия, описанные в документе «Печать штрихкодов. Проектное решение» (Шаг необязательный).
 
