@@ -155,9 +155,8 @@ export A_URL="jdbc:postgresql:\/\/${ALF_HOST}:5432\/${DB_NAME}"
 sed -i '.bak' 's/datanucleus.password=.*/datanucleus.password='${DB_PASS}'/g' WEB-INF/classes/business-journal.properties
 sed -i '.bak' 's/datanucleus.ConnectionURL=.*/datanucleus.ConnectionURL='${A_URL}'/g' WEB-INF/classes/business-journal.properties
 jar -cvf businessjournal.war WEB-INF META-INF
-rm -rf WEB-INF META-INF name pass host
+rm -rf WEB-INF META-INF name pass host *.bak
 cd ${ALF_HOME}
-# TODO под вопросом удаление файла .bak
 
 echo "${GREEN}Бизнес-журнал установлен ${NORMAL}"
 
@@ -167,9 +166,8 @@ echo "${GREEN}Бизнес-журнал установлен ${NORMAL}"
 
 echo "${YELLOW}Установка Хранилища уведомлений ${NORMAL}"
 
-# TODO
-# psql –U postgres
-# CREATE DATABASE notifications WITH OWNER = alfresco ENCODING = 'UTF8' TABLESPACE = pg_default LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8' CONNECTION LIMIT = -1;
+export PGPASSWORD='admin'
+createdb notifications --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
 notificationstore.datanucleus.dbms=postgres
@@ -186,7 +184,6 @@ sed -i '.bak' 's/notificationstore.datanucleus.ConnectionPassword=.*/notificatio
 sed -i '.bak' 's/notificationstore.datanucleus.ConnectionURL=.*/notificationstore.datanucleus.ConnectionURL=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/notifications'
 
 ${ALF_HOME}/alfresco.sh restart tomcat
-
 # TODO добавить проверку на то, что томкат запущен через while
 
 echo "${GREEN}Хранилище уведомлений установлено ${NORMAL}"
@@ -198,18 +195,22 @@ echo "${GREEN}Хранилище уведомлений установлено $
 # TODO взять варник модуля и попробовать поставить
 
 # ------------------------------------------------------------------------------------------------------
-# Проверить в файле «<путь до папки инсталляции>\tomcat\shared\classes\alfresco- global.properties» наличие следующего ключа: security.anyDenyDenies=false. В случае наличия – закомментировать или удалить строку целиком.
+# Проверить в файле «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» наличие следующего ключа: security.anyDenyDenies=false. В случае наличия – закомментировать или удалить строку целиком.
 # ------------------------------------------------------------------------------------------------------
 sed -i '.bak' 's/security.anyDenyDenies=false.*/\#security.anyDenyDenies=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+rm -rf *.bak
 
 # ------------------------------------------------------------------------------------------------------
-# Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco- global.properties» параметр для разворачивания справочников Системы (со значениями по умолчанию): lecm.dictionaries.bootstrapOnStart=true. Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
+# Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» параметр для разворачивания справочников Системы (со значениями по умолчанию): lecm.dictionaries.bootstrapOnStart=true. Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
 # ------------------------------------------------------------------------------------------------------
 
-# TODO
+cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+lecm.dictionaries.bootstrapOnStart=true
+EOL
+# TODO Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
 
 # ------------------------------------------------------------------------------------------------------
-# Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco- global.properties» обязательные параметры модуля отчетности
+# Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» обязательные параметры модуля отчетности
 # ------------------------------------------------------------------------------------------------------
 
 # TODO
@@ -230,6 +231,17 @@ ${ALF_HOME}/alfresco.sh start
 # После успешного запуска сервера, во избежание процесса повторного разворачивания оригинальных war-файлов, настоятельно рекомендуется переименовать либо удалить файлы «alfresco.war» и «share.war» в каталоге «{catalina.home}/webapps». Перед удалением или переименованием файлов «alfresco.war» и «share.war» необходимо предварительно остановить сервер Tomcat.
 # ------------------------------------------------------------------------------------------------------
 
+if [[ "$STATUS" == *"tomcat already running"* ]];
+    then
+        echo "${RED}tomcat запущен"
+        echo "${YELLOW}Остановка Tomcat ${NORMAL}"
+        ${ALF_HOME}/alfresco.sh stop tomcat
+    else 
+        echo "${GREEN}tomcat не запущен"
+fi
+
+mv -v ${CATALINA_HOME}/webapps/alfresco.war ${CATALINA_HOME}/webapps/alf_alfresco.war
+mv -v ${CATALINA_HOME}/webapps/share.war ${CATALINA_HOME}/webapps/sh_share.war
 # ------------------------------------------------------------------------------------------------------
 # Файл «activation» необходимо передать для генерации лицензии поставщику решения.
 # ------------------------------------------------------------------------------------------------------
