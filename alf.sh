@@ -267,6 +267,11 @@ lecm.dictionaries.bootstrapOnStart=true
 EOL
 fi
 
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]
+then
+rm -rf ${CATALINA_HOME}/logs/catalina.out
+fi
+
 ${ALF_HOME}/alfresco.sh restart
 
 while [ $SERV_STAT -eq 0 ]
@@ -276,9 +281,6 @@ do
 done
 
 # Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
-
-sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 # ------------------------------------------------------------------------------------------------------
 # Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» обязательные параметры модуля отчетности
@@ -349,6 +351,11 @@ cp -R ./alfresco/lecmlicense ${CATALINA_HOME}/shared/classes
 # Запустить Alfresco. Результатом успешного запуска с установленной лицензией является успешный вход в систему.
 # ------------------------------------------------------------------------------------------------------
 
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]
+then
+rm -rf ${CATALINA_HOME}/logs/catalina.out
+fi
+
 ${ALF_HOME}/alfresco.sh start
 
 cat ${CATALINA_HOME}/shared/classes/alfresco-global.properties | grep share.port= | cut -f2 -d'='| cut -f1 -d' ' > port
@@ -363,5 +370,8 @@ done
 
 open http://127.0.0.1:${SHARE_PORT}/share
 
+
+sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 echo "${RED} II.4. Обязательная настройка Бизнес-платформы выполнить руками ${NORMAL}"
