@@ -37,7 +37,7 @@ echo "${GREEN}Утилита wget уже установлена ${NORMAL}${NEWLI
 # ------------------------------------------------------------------------------------------------------
 echo "${GREEN}Утилита postgresql уже установлена ${NORMAL}${NEWLINE}$(brew list postgresql > /dev/null)" || echo "${YELLOW}Установка postgresql ${NORMAL}${NEWLINE}$(brew install postgresql)"
 
-# TODO сделать переход в папку со скриптом
+
 echo "${GREEN}Текущая директория: $(pwd) ${NORMAL} ${NEWLINE}"
 
 if [ -f $ALFDWNLD ]
@@ -72,7 +72,7 @@ if [ -d $ALF_HOME ]
         echo "${GREEN}Alfesco уже установлена"
     else
         echo "${YELLOW}Запуск инсталлятора Alfresco Community ${NORMAL}"
-        echo "${GREEN}После завершения установки убрать все галочки ${NORMAL}"
+        echo "${RED}После завершения установки убрать все галочки ${NORMAL}"
 
         if [ -d $ALF_HOME ]
             then
@@ -92,23 +92,43 @@ fi
 # ------------------------------------------------------------------------------------------------------
 # Бизнес-платформа
 # ------------------------------------------------------------------------------------------------------
-${ALF_HOME}/alfresco.sh start
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]
+then
+rm -rf ${CATALINA_HOME}/logs/catalina.out
+fi
 
-echo "${YELLOW}Установка Бизнес-платформы ${NORMAL}"
+${ALF_HOME}/alfresco.sh start
 
 echo "$(${ALF_HOME}/alfresco.sh status)"
 STATUS=`${ALF_HOME}/alfresco.sh status`
 
+echo "${YELLOW}Ожидание запуска платформы ${NORMAL}"
+
+SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
+echo "$SERV_STAT"
+
+while [ $SERV_STAT -eq 0 ]
+do
+    sleep 10s
+    SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
+done
+
+echo "${GREEN}Платформа запущена ${NORMAL}"
+
+# ------------------------------------------------------------------------------------------------------
 # Если сервис приложения Alfresco был запущен, необходимо остановить его
+# ------------------------------------------------------------------------------------------------------
 
 if [[ "$STATUS" == *"tomcat already running"* ]];
     then
-        echo "${RED}tomcat запущен"
+        echo "${RED}Tomcat запущен${NORMAL}"
         echo "${YELLOW}Остановка Tomcat ${NORMAL}"
         ${ALF_HOME}/alfresco.sh stop tomcat
     else 
-        echo "${GREEN}tomcat не запущен"
+        echo "${GREEN}tomcat не запущен${NORMAL}"
 fi
+
+echo "${YELLOW}Установка Бизнес-платформы ${NORMAL}"
 # ------------------------------------------------------------------------------------------------------
 # Добавить к параметрам запуска сервиса обязательные параметры
 # ------------------------------------------------------------------------------------------------------
@@ -118,6 +138,9 @@ fi
 # ------------------------------------------------------------------------------------------------------
 # Заменить war-файлы «alfresco.war» и «share.war» в каталоге «{catalina.home}/webapps» на соответствующие файлы из дистрибутива бизнес-платформы.
 # ------------------------------------------------------------------------------------------------------
+
+echo "${YELLOW}Замена war-файлов «alfresco.war» и «share.war» в каталоге «{catalina.home}/webapps» на соответствующие файлы из дистрибутива бизнес-платформы.${NORMAL}"
+
 rm ${CATALINA_HOME}/webapps/alfresco.war
 cp -R ./alfresco/alfresco.war ${CATALINA_HOME}/webapps
 
@@ -128,12 +151,16 @@ cp -R ./alfresco/share.war ${CATALINA_HOME}/webapps
 # Удалить каталоги «alfresco» и «share» из каталога «{catalina.home}/webapps».
 # ------------------------------------------------------------------------------------------------------
 
+echo "${YELLOW}Удаление каталогов «alfresco» и «share» из каталога «{catalina.home}/webapps».${NORMAL}"
+
 rm -rf ${CATALINA_HOME}/webapps/alfresco
 rm -rf ${CATALINA_HOME}/webapps/share
 
 # ------------------------------------------------------------------------------------------------------
 # Удалить содержимое каталога «<путь до папки инсталяции>/alf_data/solr4/model»
 # ------------------------------------------------------------------------------------------------------
+
+echo "${YELLOW}Удаление содержимого каталога «<путь до папки инсталяции>/alf_data/solr4/model.${NORMAL}"
 
 rm -rf ${ALF_DATA_HOME}/solr4/model
 
@@ -143,8 +170,10 @@ rm -rf ${ALF_DATA_HOME}/solr4/model
 
 echo "${YELLOW}Установка Бизнес-журнала ${NORMAL}"
 
+echo "${YELLOW}Копирование businessjournal.war в CATALINA_HOME/webapps${NORMAL}"
 cp -R ./alfresco/businessjournal.war ${CATALINA_HOME}/webapps
 cd ${CATALINA_HOME}/webapps
+echo "${YELLOW}Распаковка businessjournal.war${NORMAL}"
 jar -xvf businessjournal.war
 rm businessjournal.war
 cat ${CATALINA_HOME}/shared/classes/alfresco-global.properties | grep db.name= | cut -f2 -d'='| cut -f1 -d' ' > name
@@ -154,6 +183,7 @@ export DB_PASS=$(< pass)
 export DB_NAME=$(< name)
 export ALF_HOST=$(< host)
 export A_URL="jdbc:postgresql:\/\/${ALF_HOST}:5432\/${DB_NAME}"
+echo "${YELLOW}Редактирование business-journal.properties${NORMAL}"
 sed -i '.bak' 's/datanucleus.password=.*/datanucleus.password='${DB_PASS}'/g' WEB-INF/classes/business-journal.properties
 sed -i '.bak' 's/datanucleus.ConnectionURL=.*/datanucleus.ConnectionURL='${A_URL}'/g' WEB-INF/classes/business-journal.properties
 jar -cvf businessjournal.war WEB-INF META-INF
@@ -168,9 +198,14 @@ echo "${GREEN}Бизнес-журнал установлен ${NORMAL}"
 
 echo "${YELLOW}Установка Хранилища уведомлений ${NORMAL}"
 
+echo "${YELLOW}Создание БД notifications${NORMAL}"
 export PGPASSWORD='admin'
 createdb notifications --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
+echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
+
+if [ `grep -c "notificationstore.datanucleus.dbms=postgres" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]
+then
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
 notificationstore.datanucleus.dbms=postgres
 notificationstore.datanucleus.ConnectionDriverName=org.postgresql.Driver
@@ -180,17 +215,27 @@ notificationstore.datanucleus.ConnectionPassword=admin
 notificationstore.datanucleus.generateSchema.database.mode=create
 notificationstore.brokerURL=tcp://127.0.0.1:61616
 EOL
+fi
 
 sed -i '.bak' 's/notificationstore.datanucleus.ConnectionUserName=.*/notificationstore.datanucleus.ConnectionUserName='${DB_NAME}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 sed -i '.bak' 's/notificationstore.datanucleus.ConnectionPassword=.*/notificationstore.datanucleus.ConnectionPassword='${DB_PASS}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-sed -i '.bak' 's/notificationstore.datanucleus.ConnectionURL=.*/notificationstore.datanucleus.ConnectionURL=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/notifications'
+sed -i '.bak' 's/notificationstore.datanucleus.ConnectionURL=.*/notificationstore.datanucleus.ConnectionURL=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/notifications/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 
-${ALF_HOME}/alfresco.sh restart tomcat
+rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
-while [ "$STATUS" == *"tomcat not running"* ]
-        do
-            sleep 1s
-        done
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]
+then
+rm -rf ${CATALINA_HOME}/logs/catalina.out
+fi
+
+${ALF_HOME}/alfresco.sh restart
+
+
+while [ $SERV_STAT -eq 0 ]
+do
+    sleep 5s
+    SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
+done
 
 echo "${GREEN}Хранилище уведомлений установлено ${NORMAL}"
 
@@ -204,29 +249,36 @@ echo "${GREEN}Хранилище уведомлений установлено $
 # Проверить в файле «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» наличие следующего ключа: security.anyDenyDenies=false. В случае наличия – закомментировать или удалить строку целиком.
 # ------------------------------------------------------------------------------------------------------
 
-# TODO добавить проверку наличия
-
-sed -i '.bak' 's/security.anyDenyDenies=false.*/\#security.anyDenyDenies=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-rm -rf *.bak
+if [ `grep -c "security.anyDenyDenies=false" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 1 ]
+then
+    sed -i '.bak' 's/security.anyDenyDenies=false.*//g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+fi
+rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 # ------------------------------------------------------------------------------------------------------
 # Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» параметр для разворачивания справочников Системы (со значениями по умолчанию): lecm.dictionaries.bootstrapOnStart=true.
 # ------------------------------------------------------------------------------------------------------
 
+if [ `grep -c "lecm.dictionaries.bootstrapOnStart=true" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]
+then
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+${NEWLINE}
 lecm.dictionaries.bootstrapOnStart=true
 EOL
+fi
 
-${ALF_HOME}/alfresco.sh restart tomcat
+${ALF_HOME}/alfresco.sh restart
 
-while [ "$STATUS" == *"tomcat not running"* ]
-        do
-            sleep 1s
-        done
+while [ $SERV_STAT -eq 0 ]
+do
+    sleep 5s
+    SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
+done
 
 # Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
 
-#sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 # ------------------------------------------------------------------------------------------------------
 # Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» обязательные параметры модуля отчетности
@@ -235,7 +287,11 @@ while [ "$STATUS" == *"tomcat not running"* ]
 export PGPASSWORD='admin'
 createdb reporting --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
+echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
+if [ `grep -c "reporting.db.name=reporting" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]
+then
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+${NEWLINE}
 reporting.db.name=reporting
 reporting.db.host=localhost
 reporting.db.port=5432
@@ -244,15 +300,16 @@ reporting.db.password=admin
 reporting.db.driver=org.postgresql.Driver
 reporting.db.url=jdbc:postgresql://localhost:5432/reporting
 EOL
+fi
 
 sed -i '.bak' 's/reporting.db.host=.*/reporting.db.host='${ALF_HOST}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 sed -i '.bak' 's/reporting.db.password=.*/reporting.db.password='${DB_PASS}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/reporting/g' ${CATALINA_HOME}/shared/classes/
+sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/reporting/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 # ------------------------------------------------------------------------------------------------------
 # Запустить Alfresco
 # ------------------------------------------------------------------------------------------------------
 
-${ALF_HOME}/alfresco.sh start
+#${ALF_HOME}/alfresco.sh restart
 
 # ------------------------------------------------------------------------------------------------------
 # Запуск должен завершиться автоматической остановкой. При этом необходимо проверить наличие файла «<путь до папки инсталляции>\activation».
