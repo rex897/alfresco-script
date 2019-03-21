@@ -92,6 +92,8 @@ fi
 # ------------------------------------------------------------------------------------------------------
 # Бизнес-платформа
 # ------------------------------------------------------------------------------------------------------
+${ALF_HOME}/alfresco.sh start
+
 echo "${YELLOW}Установка Бизнес-платформы ${NORMAL}"
 
 echo "$(${ALF_HOME}/alfresco.sh status)"
@@ -184,7 +186,11 @@ sed -i '.bak' 's/notificationstore.datanucleus.ConnectionPassword=.*/notificatio
 sed -i '.bak' 's/notificationstore.datanucleus.ConnectionURL=.*/notificationstore.datanucleus.ConnectionURL=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/notifications'
 
 ${ALF_HOME}/alfresco.sh restart tomcat
-# TODO добавить проверку на то, что томкат запущен через while
+
+while [ "$STATUS" == *"tomcat not running"* ]
+        do
+            sleep 1s
+        done
 
 echo "${GREEN}Хранилище уведомлений установлено ${NORMAL}"
 
@@ -197,24 +203,51 @@ echo "${GREEN}Хранилище уведомлений установлено $
 # ------------------------------------------------------------------------------------------------------
 # Проверить в файле «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» наличие следующего ключа: security.anyDenyDenies=false. В случае наличия – закомментировать или удалить строку целиком.
 # ------------------------------------------------------------------------------------------------------
+
+# TODO добавить проверку наличия
+
 sed -i '.bak' 's/security.anyDenyDenies=false.*/\#security.anyDenyDenies=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 rm -rf *.bak
 
 # ------------------------------------------------------------------------------------------------------
-# Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» параметр для разворачивания справочников Системы (со значениями по умолчанию): lecm.dictionaries.bootstrapOnStart=true. Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
+# Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» параметр для разворачивания справочников Системы (со значениями по умолчанию): lecm.dictionaries.bootstrapOnStart=true.
 # ------------------------------------------------------------------------------------------------------
 
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
 lecm.dictionaries.bootstrapOnStart=true
 EOL
-# TODO Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
+
+${ALF_HOME}/alfresco.sh restart tomcat
+
+while [ "$STATUS" == *"tomcat not running"* ]
+        do
+            sleep 1s
+        done
+
+# Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
+
+sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 
 # ------------------------------------------------------------------------------------------------------
 # Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» обязательные параметры модуля отчетности
 # ------------------------------------------------------------------------------------------------------
 
-# TODO
+export PGPASSWORD='admin'
+createdb reporting --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
+cat >> /alfresco/tomcat/shared/classes/alfresco-global.properties <<EOL
+reporting.db.name=reporting
+reporting.db.host=localhost
+reporting.db.port=5432
+reporting.db.username=alfresco
+reporting.db.password=admin
+reporting.db.driver=org.postgresql.Driver
+reporting.db.url=jdbc:postgresql://localhost:5432/reporting
+EOL
+
+sed -i '.bak' 's/reporting.db.host=.*/reporting.db.host='${ALF_HOST}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+sed -i '.bak' 's/reporting.db.password=.*/reporting.db.password='${DB_PASS}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/reporting'
 # ------------------------------------------------------------------------------------------------------
 # Запустить Alfresco
 # ------------------------------------------------------------------------------------------------------
@@ -252,6 +285,7 @@ mv -v ${CATALINA_HOME}/webapps/share.war ${CATALINA_HOME}/webapps/sh_share.war
 # Полученный файл с лицензией с именем «lecmlicense» необходимо поместить в каталог «{catalina.home}/shared/classes»
 # ------------------------------------------------------------------------------------------------------
 
+cd /Users/ks/ДАТАТЕХ/alfresco-script
 cp -R ./alfresco/lecmlicense ${CATALINA_HOME}/shared/classes
 
 # ------------------------------------------------------------------------------------------------------
