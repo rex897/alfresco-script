@@ -355,6 +355,12 @@ cat ${CATALINA_HOME}/shared/classes/alfresco-global.properties | grep share.port
 export SHARE_PORT=$(< port)
 rm -rf port
 
+while [ $SERV_STAT -eq 0 ]
+do
+    sleep 5s
+    SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
+done
+
 open http://127.0.0.1:${SHARE_PORT}/share
 
 
