@@ -226,7 +226,7 @@ while [ "$STATUS" == *"tomcat not running"* ]
 
 # Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
 
-sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+#sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 
 # ------------------------------------------------------------------------------------------------------
 # Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» обязательные параметры модуля отчетности
@@ -235,7 +235,7 @@ sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bo
 export PGPASSWORD='admin'
 createdb reporting --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
-cat >> /alfresco/tomcat/shared/classes/alfresco-global.properties <<EOL
+cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
 reporting.db.name=reporting
 reporting.db.host=localhost
 reporting.db.port=5432
@@ -247,7 +247,7 @@ EOL
 
 sed -i '.bak' 's/reporting.db.host=.*/reporting.db.host='${ALF_HOST}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 sed -i '.bak' 's/reporting.db.password=.*/reporting.db.password='${DB_PASS}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/reporting'
+sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/reporting/g' ${CATALINA_HOME}/shared/classes/
 # ------------------------------------------------------------------------------------------------------
 # Запустить Alfresco
 # ------------------------------------------------------------------------------------------------------
