@@ -40,7 +40,7 @@ echo "${GREEN}Утилита postgresql уже установлена ${NORMAL}$
 
 echo "${GREEN}Текущая директория: $(pwd) ${NORMAL} ${NEWLINE}"
 
-if [ -f $ALFDWNLD ]
+if [ -f $ALFDWNLD ];
     then
         echo "${GREEN}Образ Alfresco уже скачан ${NORMAL}"
     else
@@ -52,7 +52,7 @@ fi
 # Монтирование диска, копирование образа, извлечение диска
 # ------------------------------------------------------------------------------------------------------
 
-if [ -d $ALF_INST ]
+if [ -d $ALF_INST ];
     then
         echo "${GREEN}Инсталлер Alfresco уже есть в папке Application ${NORMAL}"
     else
@@ -67,9 +67,9 @@ if [ -d $ALF_INST ]
         hdiutil detach /Volumes/Alfresco\ Community
 fi
 
-if [ -d $ALF_HOME ]
+if [ -d $ALF_HOME ];
     then
-        echo "${GREEN}Alfesco уже установлена"
+        echo "${GREEN}Alfesco уже установлена${NORMAL}"
     else
         echo "${YELLOW}Запуск инсталлятора Alfresco Community ${NORMAL}"
         echo "${RED}После завершения установки убрать все галочки ${NORMAL}"
@@ -92,9 +92,8 @@ fi
 # ------------------------------------------------------------------------------------------------------
 # Бизнес-платформа
 # ------------------------------------------------------------------------------------------------------
-if [ -f ${CATALINA_HOME}/logs/catalina.out ]
-then
-rm -rf ${CATALINA_HOME}/logs/catalina.out
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]; then
+    rm -rf ${CATALINA_HOME}/logs/catalina.out
 fi
 
 ${ALF_HOME}/alfresco.sh start
@@ -107,12 +106,11 @@ echo "${YELLOW}Ожидание запуска платформы ${NORMAL}"
 SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
 echo "$SERV_STAT"
 
-while [ $SERV_STAT -eq 0 ]
-do
+while [ $SERV_STAT -eq 0 ]; do
     sleep 10s
     SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
 done
-
+SHARE_PORT=0
 echo "${GREEN}Платформа запущена ${NORMAL}"
 
 # ------------------------------------------------------------------------------------------------------
@@ -199,14 +197,15 @@ echo "${GREEN}Бизнес-журнал установлен ${NORMAL}"
 echo "${YELLOW}Установка Хранилища уведомлений ${NORMAL}"
 
 echo "${YELLOW}Создание БД notifications${NORMAL}"
-export PGPASSWORD='admin'
+export PGPASSWORD=$DB_PASS
 createdb notifications --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
 echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
 
-if [ `grep -c "notificationstore.datanucleus.dbms=postgres" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]
+if [ `grep -c "notificationstore.datanucleus.dbms=postgres" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ];
 then
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+${NEWLINE}
 notificationstore.datanucleus.dbms=postgres
 notificationstore.datanucleus.ConnectionDriverName=org.postgresql.Driver
 notificationstore.datanucleus.ConnectionURL=jdbc:postgresql://localhost:5432/notifications
@@ -223,20 +222,18 @@ sed -i '.bak' 's/notificationstore.datanucleus.ConnectionURL=.*/notificationstor
 
 rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
-if [ -f ${CATALINA_HOME}/logs/catalina.out ]
-then
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]; then
 rm -rf ${CATALINA_HOME}/logs/catalina.out
 fi
 
 ${ALF_HOME}/alfresco.sh restart
 
 
-while [ $SERV_STAT -eq 0 ]
-do
+while [ $SERV_STAT -eq 0 ]; do
     sleep 5s
     SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
 done
-
+SHARE_PORT=0
 echo "${GREEN}Хранилище уведомлений установлено ${NORMAL}"
 
 # ------------------------------------------------------------------------------------------------------
@@ -249,8 +246,7 @@ echo "${GREEN}Хранилище уведомлений установлено $
 # Проверить в файле «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» наличие следующего ключа: security.anyDenyDenies=false. В случае наличия – закомментировать или удалить строку целиком.
 # ------------------------------------------------------------------------------------------------------
 
-if [ `grep -c "security.anyDenyDenies=false" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 1 ]
-then
+if [ `grep -c "security.anyDenyDenies=false" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 1 ]; then
     sed -i '.bak' 's/security.anyDenyDenies=false.*//g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 fi
 rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
@@ -259,39 +255,35 @@ rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 # Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» параметр для разворачивания справочников Системы (со значениями по умолчанию): lecm.dictionaries.bootstrapOnStart=true.
 # ------------------------------------------------------------------------------------------------------
 
-if [ `grep -c "lecm.dictionaries.bootstrapOnStart=true" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]
-then
+if [ `grep -c "lecm.dictionaries.bootstrapOnStart=true" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
 ${NEWLINE}
 lecm.dictionaries.bootstrapOnStart=true
 EOL
 fi
 
-if [ -f ${CATALINA_HOME}/logs/catalina.out ]
-then
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]; then
 rm -rf ${CATALINA_HOME}/logs/catalina.out
 fi
 
 ${ALF_HOME}/alfresco.sh restart
 
-while [ $SERV_STAT -eq 0 ]
-do
+while [ $SERV_STAT -eq 0 ]; do
     sleep 5s
     SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
 done
-
+SHARE_PORT=0
 # Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
 
 # ------------------------------------------------------------------------------------------------------
 # Создать в СУБД под пользователем alfresco рядом с БД «alfresco» пустую БД «reporting». Добавить в файл «<путь до папки инсталляции>\tomcat\shared\classes\alfresco-global.properties» обязательные параметры модуля отчетности
 # ------------------------------------------------------------------------------------------------------
 
-export PGPASSWORD='admin'
+export PGPASSWORD=$DB_PASS
 createdb reporting --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
 
 echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
-if [ `grep -c "reporting.db.name=reporting" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]
-then
+if [ `grep -c "reporting.db.name=reporting" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
 cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
 ${NEWLINE}
 reporting.db.name=reporting
@@ -351,9 +343,8 @@ cp -R ./alfresco/lecmlicense ${CATALINA_HOME}/shared/classes
 # Запустить Alfresco. Результатом успешного запуска с установленной лицензией является успешный вход в систему.
 # ------------------------------------------------------------------------------------------------------
 
-if [ -f ${CATALINA_HOME}/logs/catalina.out ]
-then
-rm -rf ${CATALINA_HOME}/logs/catalina.out
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]; then
+    rm -rf ${CATALINA_HOME}/logs/catalina.out
 fi
 
 ${ALF_HOME}/alfresco.sh start
@@ -362,8 +353,7 @@ cat ${CATALINA_HOME}/shared/classes/alfresco-global.properties | grep share.port
 export SHARE_PORT=$(< port)
 rm -rf port
 
-while [ $SERV_STAT -eq 0 ]
-do
+while [ $SERV_STAT -eq 0 ]; do
     sleep 5s
     SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
 done
@@ -371,7 +361,7 @@ done
 open http://127.0.0.1:${SHARE_PORT}/share
 
 
-sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/rlecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/lecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 echo "${RED} II.4. Обязательная настройка Бизнес-платформы выполнить руками ${NORMAL}"
