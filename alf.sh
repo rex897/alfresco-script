@@ -208,12 +208,6 @@ jar -cvf businessjournal.war WEB-INF META-INF
 rm -rf WEB-INF META-INF name pass host *.bak
 #cd ${ALF_HOME}
 
-businessjournal.port=8080
-businessjournal.host=127.0.0.1
-datanucleus.ConnectionURL=jdbc:postgresql://localhost:5432/bj
-datanucleus.ConnectionUserName=postgres
-datanucleus.ConnectionPassword=1q2w3e4r5t
-
 echo "${GREEN}Бизнес-журнал установлен ${NORMAL}"
 
 # ------------------------------------------------------------------------------------------------------
@@ -328,23 +322,6 @@ fi
 sed -i '.bak' 's/reporting.db.host=.*/reporting.db.host='${ALF_HOST}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 sed -i '.bak' 's/reporting.db.password=.*/reporting.db.password='${DB_PASS}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF_HOST}':5432\/reporting/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-# ------------------------------------------------------------------------------------------------------
-# Запустить Alfresco
-# ------------------------------------------------------------------------------------------------------
-
-#${ALF_HOME}/alfresco.sh restart
-
-# ------------------------------------------------------------------------------------------------------
-# Запуск должен завершиться автоматической остановкой. При этом необходимо проверить наличие файла «<путь до папки инсталляции>\activation».
-# ------------------------------------------------------------------------------------------------------
-
-# TODO хз надо или нет
-
-# ------------------------------------------------------------------------------------------------------
-# Файл «activation» необходимо передать для генерации лицензии поставщику решения.
-# ------------------------------------------------------------------------------------------------------
-
-# TODO возможно этот шаг можно убрать
 
 # ------------------------------------------------------------------------------------------------------
 # Полученный файл с лицензией с именем «lecmlicense» необходимо поместить в каталог «{catalina.home}/shared/classes»
