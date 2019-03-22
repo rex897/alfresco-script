@@ -198,7 +198,7 @@ echo "${YELLOW}Установка Хранилища уведомлений ${NO
 
 echo "${YELLOW}Создание БД notifications${NORMAL}"
 export PGPASSWORD=$DB_PASS
-createdb notifications --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
+createdb notifications --locale 'ru_RU.UTF-8' --owner alfresco --template template0 -U postgres
 
 echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
 
@@ -280,7 +280,7 @@ SHARE_PORT=0
 # ------------------------------------------------------------------------------------------------------
 
 export PGPASSWORD=$DB_PASS
-createdb reporting --locale 'ru_RU.UTF-8' --owner alfresco -U postgres
+createdb reporting --locale 'ru_RU.UTF-8' --owner alfresco --template template0 -U postgres
 
 echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
 if [ `grep -c "reporting.db.name=reporting" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
