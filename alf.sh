@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# ------------------------------------------------------------------------------------------------------
-# Переменные
-# ------------------------------------------------------------------------------------------------------
 export ALF_HOME=/Applications/alfresco-community
 export ALF_DATA_HOME=$ALF_HOME/alf_data
 export CATALINA_HOME=$ALF_HOME/tomcat
@@ -14,106 +11,122 @@ export YELLOW=`tput setaf 3`     #  ${YELLOW}    # желтый цвет зна�
 export NORMAL=`tput sgr0`      #  ${NORMAL}    # все атрибуты по умолчанию
 export NEWLINE=$'\n'           # ${NEWLINE}
 export ALF_INST=/Applications/alfresco-community-installer-201605-osx-x64.app
+export STATUS=`${ALF_HOME}/alfresco.sh status`
+export SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
 
-
-# ------------------------------------------------------------------------------------------------------
-# Часто используемые функции
-# ------------------------------------------------------------------------------------------------------
-
-#Проверяет запущен ли Tomcat
+########################################
+# Проверка запущен ли Tomcat
+# Globals:
+#   STATUS, ALF_HOME, RED, YELLOW, GREEN, NORMAL
+# Arguments:
+#   None
+# Returns:
+#   None
+########################################
 tomcatStop(){
-    if [[ "$STATUS" == *"tomcat already running"* ]];
-        then
-            echo "${RED}Tomcat запущен${NORMAL}"
-            echo "${YELLOW}Остановка Tomcat ${NORMAL}"
-            ${ALF_HOME}/alfresco.sh stop tomcat
-        else 
-            echo "${GREEN}tomcat не запущен${NORMAL}"
-    fi
+STATUS=`${ALF_HOME}/alfresco.sh status`
+if [[ "$STATUS" == *"tomcat already running"* ]]; then
+  echo "${RED}Tomcat запущен${NORMAL}"
+  echo "${YELLOW}Остановка Tomcat ${NORMAL}"
+  ${ALF_HOME}/alfresco.sh stop tomcat
+else 
+  echo "${GREEN}tomcat не запущен${NORMAL}"
+fi
 }
 
-#Удаляет лог catalina.out
+########################################
+# Удаление catalina.out
+# Globals:
+#   CATALINA_HOME
+# Arguments:
+#   None
+# Returns:
+#   None
+########################################
 rmCatalinaOut(){
-    if [ -f ${CATALINA_HOME}/logs/catalina.out ]; then
-        rm -rf ${CATALINA_HOME}/logs/catalina.out
-    fi
+if [ -f ${CATALINA_HOME}/logs/catalina.out ]; then
+  rm -rf ${CATALINA_HOME}/logs/catalina.out
+fi
 }
 
-#Ожидание запуска сервера
+########################################
+# Ожидание запуска платформы
+# Globals:
+#   CATALINA_HOME, SERV_STAT
+# Arguments:
+#   None
+# Returns:
+#   None
+########################################
 waitServerStart(){
-    while [ $SERV_STAT -eq 0 ]; do
-        sleep 10s
-        SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
-    done
+while [ $SERV_STAT -eq 0 ]; do
+  sleep 10s
+  SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
+done
 }
 
-# ------------------------------------------------------------------------------------------------------
+########################################
 # Проверка установлен ли менеджер пакетов brew
-# ------------------------------------------------------------------------------------------------------
+########################################
 
-if [[ $(command -v brew) == "" ]];
-    then
-        echo "${YELLOW}Установка Homebrew ${NORMAL} ${NEWLINE}"
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    else
-        echo "${GREEN}Homebrew уже установлен${NORMAL}"
-        #brew update
+if [[ $(command -v brew) == "" ]]; then
+  echo "${YELLOW}Установка Homebrew ${NORMAL} ${NEWLINE}"
+  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+else
+  echo "${GREEN}Homebrew уже установлен${NORMAL}"
 fi
 
-# ------------------------------------------------------------------------------------------------------
+########################################
 # Проверка установлена ли утилита wget
-# ------------------------------------------------------------------------------------------------------
-echo "${GREEN}Утилита wget уже установлена ${NORMAL}${NEWLINE}$(brew list wget > /dev/null)" || echo "${YELLOW}Установка wget для загрузки образа Alfresco ${NORMAL} ${NEWLINE}$(brew install wget)" 
+########################################
+echo "${GREEN}Утилита wget уже установлена ${NORMAL}${NEWLINE}$(brew list wget > /dev/null)" \
+  || echo "${YELLOW}Установка wget для загрузки образа Alfresco ${NORMAL} ${NEWLINE}$(brew install wget)" 
 
-# ------------------------------------------------------------------------------------------------------
+########################################
 # Проверка установлена ли утилита postgresql (postgresql)
-# ------------------------------------------------------------------------------------------------------
-echo "${GREEN}Утилита postgresql уже установлена ${NORMAL}${NEWLINE}$(brew list postgresql > /dev/null)" || echo "${YELLOW}Установка postgresql ${NORMAL}${NEWLINE}$(brew install postgresql)"
-
+########################################
+echo "${GREEN}Утилита postgresql уже установлена ${NORMAL}${NEWLINE}$(brew list postgresql > /dev/null)" \
+  || echo "${YELLOW}Установка postgresql ${NORMAL}${NEWLINE}$(brew install postgresql)"
 
 echo "${GREEN}Текущая директория: $(pwd) ${NORMAL} ${NEWLINE}"
 
-if [ -f $ALFDWNLD ];
-    then
-        echo "${GREEN}Образ Alfresco уже скачан ${NORMAL}"
-    else
-        echo "${YELLOW}Скачивание образа Alfresco ${NORMAL} ${NEWLINE}"
-        wget https://sourceforge.net/projects/alfresco/files/Alfresco%20201605%20Community/alfresco-community-installer-201605-osx-x64.dmg
+if [ -f $ALFDWNLD ]; then
+  echo "${GREEN}Образ Alfresco уже скачан ${NORMAL}"
+else
+  echo "${YELLOW}Скачивание образа Alfresco ${NORMAL} ${NEWLINE}"
+  wget https://sourceforge.net/projects/alfresco/files/Alfresco%20201605%20Community/alfresco-community-installer-201605-osx-x64.dmg
 fi
 
 # ------------------------------------------------------------------------------------------------------
 # Монтирование диска, копирование образа, извлечение диска
 # ------------------------------------------------------------------------------------------------------
 
-if [ -d $ALF_INST ];
-    then
-        echo "${GREEN}Инсталлер Alfresco уже есть в папке Application ${NORMAL}"
-    else
-        echo "${YELLOW}Монтирование образа ${NORMAL}"
-        hdiutil attach alfresco-community-installer-201605-osx-x64.dmg
-        echo "${GREEN}Образ смонтирован ${NORMAL}"
+if [ -d $ALF_INST ]; then
+  echo "${GREEN}Инсталлер Alfresco уже есть в папке Application ${NORMAL}"
+else
+  echo "${YELLOW}Монтирование образа ${NORMAL}"
+  hdiutil attach alfresco-community-installer-201605-osx-x64.dmg
+  echo "${GREEN}Образ смонтирован ${NORMAL}"
 
-        echo "${YELLOW}Копирование инсталлятора в папку Application ${NORMAL}"
-        cp -R /Volumes/Alfresco\ Community/alfresco-community-installer-201605-osx-x64.app /Applications
+  echo "${YELLOW}Копирование инсталлятора в папку Application ${NORMAL}"
+  cp -R /Volumes/Alfresco\ Community/alfresco-community-installer-201605-osx-x64.app /Applications
 
-        echo "${YELLOW}Демонтирование образа ${NORMAL}"
-        hdiutil detach /Volumes/Alfresco\ Community
+  echo "${YELLOW}Демонтирование образа ${NORMAL}"
+  hdiutil detach /Volumes/Alfresco\ Community
 fi
 
-if [ -d $ALF_HOME ];
-    then
-        echo "${GREEN}Alfesco уже установлена${NORMAL}"
-    else
-        echo "${YELLOW}Запуск инсталлятора Alfresco Community ${NORMAL}"
-        echo "${RED}После завершения установки убрать все галочки ${NORMAL}"
-        open /Applications/alfresco-community-installer-201605-osx-x64.app
+if [ -d $ALF_HOME ]; then
+  echo "${GREEN}Alfesco уже установлена${NORMAL}"
+else
+  echo "${YELLOW}Запуск инсталлятора Alfresco Community ${NORMAL}"
+  echo "${RED}После завершения установки убрать все галочки ${NORMAL}"
+  open /Applications/alfresco-community-installer-201605-osx-x64.app
 
-        while pgrep -lf alfresco-community-installer > /dev/null
-        do
-            sleep 1s
-        done
+  while pgrep -lf alfresco-community-installer > /dev/null; do
+    sleep 1s
+  done
 
-        echo "${GREEN}Инсталлятор Alfresco Community завершил свою работу ${NORMAL}${NEWLINE}"
+  echo "${GREEN}Инсталлятор Alfresco Community завершил свою работу ${NORMAL}${NEWLINE}"
 fi
 
 # ------------------------------------------------------------------------------------------------------
@@ -121,29 +134,16 @@ fi
 # ------------------------------------------------------------------------------------------------------
 
 echo "${YELLOW}Установка Бизнес-платформы ${NORMAL}"
-
 rmCatalinaOut
-
 ${ALF_HOME}/alfresco.sh start postgresql
-
 echo "$(${ALF_HOME}/alfresco.sh status)"
-STATUS=`${ALF_HOME}/alfresco.sh status`
-
-#echo "${YELLOW}Ожидание запуска платформы ${NORMAL}"
-
-SERV_STAT=`grep -c "INFO: Server startup in" ${CATALINA_HOME}/logs/catalina.out`
-echo "$SERV_STAT"
-
-#waitServerStart
-
 SERV_STAT=0
-echo "${GREEN}Платформа запущена ${NORMAL}"
 
 # ------------------------------------------------------------------------------------------------------
 # Если сервис приложения Alfresco был запущен, необходимо остановить его
 # ------------------------------------------------------------------------------------------------------
 
-tomcatStop
+#tomcatStop
 
 # ------------------------------------------------------------------------------------------------------
 # Добавить к параметрам запуска сервиса обязательные параметры
@@ -227,21 +227,20 @@ createdb notifications --owner alfresco -U postgres
 
 echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
 
-if [ `grep -c "notificationstore.datanucleus.dbms=postgres" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ];
-then
-cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
-${NEWLINE}
-notificationstore.datanucleus.dbms=postgres
-notificationstore.datanucleus.ConnectionDriverName=org.postgresql.Driver
-notificationstore.datanucleus.ConnectionURL=jdbc:postgresql://localhost:5432/notifications
-notificationstore.datanucleus.ConnectionUserName=alfresco
-notificationstore.datanucleus.ConnectionPassword=admin
-notificationstore.datanucleus.generateSchema.database.mode=create
-notificationstore.brokerURL=tcp://127.0.0.1:61616
-notifications.store.protocol=http
-notifications.store.host=127.0.0.1
-notifications.store.port=8080
-notifications.store.name=notifications
+if [ `grep -c "notificationstore.datanucleus.dbms=postgres" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
+  cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+  ${NEWLINE}
+  notificationstore.datanucleus.dbms=postgres
+  notificationstore.datanucleus.ConnectionDriverName=org.postgresql.Driver
+  notificationstore.datanucleus.ConnectionURL=jdbc:postgresql://localhost:5432/notifications
+  notificationstore.datanucleus.ConnectionUserName=alfresco
+  notificationstore.datanucleus.ConnectionPassword=admin
+  notificationstore.datanucleus.generateSchema.database.mode=create
+  notificationstore.brokerURL=tcp://127.0.0.1:61616
+  notifications.store.protocol=http
+  notifications.store.host=127.0.0.1
+  notifications.store.port=8080
+  notifications.store.name=notifications
 EOL
 fi
 
@@ -252,10 +251,7 @@ sed -i '.bak' 's/notificationstore.datanucleus.ConnectionURL=.*/notificationstor
 rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 #rmCatalinaOut
-
 #${ALF_HOME}/alfresco.sh restart
-
-
 #waitServerStart
 
 SERV_STAT=0
@@ -272,7 +268,7 @@ echo "${GREEN}Хранилище уведомлений установлено $
 # ------------------------------------------------------------------------------------------------------
 
 if [ `grep -c "security.anyDenyDenies=false" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 1 ]; then
-    sed -i '.bak' 's/security.anyDenyDenies=false.*//g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+  sed -i '.bak' 's/security.anyDenyDenies=false.*//g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 fi
 rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
@@ -281,17 +277,11 @@ rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 # ------------------------------------------------------------------------------------------------------
 
 if [ `grep -c "lecm.dictionaries.bootstrapOnStart=true" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
-cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
-${NEWLINE}
-lecm.dictionaries.bootstrapOnStart=true
+  cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+  ${NEWLINE}
+  lecm.dictionaries.bootstrapOnStart=true
 EOL
 fi
-
-#rmCatalinaOut
-
-#${ALF_HOME}/alfresco.sh restart
-
-#waitServerStart
 
 SERV_STAT=0
 # Посте успешной загрузки сервера, для ускорения загрузки сервера, рекомендуется изменить данный параметр в значение false!
@@ -307,15 +297,15 @@ createdb reporting --owner alfresco -U postgres
 
 echo "${YELLOW}Запись в alfresco-global.properties необходимых параметров${NORMAL}"
 if [ `grep -c "reporting.db.name=reporting" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
-cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
-${NEWLINE}
-reporting.db.name=reporting
-reporting.db.host=localhost
-reporting.db.port=5432
-reporting.db.username=alfresco
-reporting.db.password=admin
-reporting.db.driver=org.postgresql.Driver
-reporting.db.url=jdbc:postgresql://localhost:5432/reporting
+  cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+  ${NEWLINE}
+  reporting.db.name=reporting
+  reporting.db.host=localhost
+  reporting.db.port=5432
+  reporting.db.username=alfresco
+  reporting.db.password=admin
+  reporting.db.driver=org.postgresql.Driver
+  reporting.db.url=jdbc:postgresql://localhost:5432/reporting
 EOL
 fi
 
@@ -330,15 +320,14 @@ sed -i '.bak' 's/reporting.db.url=.*/reporting.db.url=jdbc:postgresql:\/\/'${ALF
 cd /Users/ks/ДАТАТЕХ/alfresco-script
 cp -R ./alfresco/lecmlicense ${CATALINA_HOME}/shared/classes
 
-if [ `grep -c "businessjournal.port=" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ];
-then
-cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
-${NEWLINE}
-businessjournal.port=8080
-businessjournal.host=127.0.0.1
-datanucleus.ConnectionURL=jdbc:postgresql://localhost:5432/bj
-datanucleus.ConnectionUserName=postgres
-datanucleus.ConnectionPassword=1q2w3e4r5t
+if [ `grep -c "businessjournal.port=" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
+  cat >> ${CATALINA_HOME}/shared/classes/alfresco-global.properties <<EOL
+  ${NEWLINE}
+  businessjournal.port=8080
+  businessjournal.host=127.0.0.1
+  datanucleus.ConnectionURL=jdbc:postgresql://localhost:5432/bj
+  datanucleus.ConnectionUserName=postgres
+  datanucleus.ConnectionPassword=1q2w3e4r5t
 EOL
 fi
 sed -i '.bak' 's/datanucleus.ConnectionPassword=1q2w3e4r5t.*/datanucleus.ConnectionPassword='${DB_PASS}'/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
@@ -348,7 +337,7 @@ sed -i '.bak' 's/datanucleus.ConnectionPassword=1q2w3e4r5t.*/datanucleus.Connect
 
 rmCatalinaOut
 
-${ALF_HOME}/alfresco.sh start
+${ALF_HOME}/alfresco.sh restart
 
 waitServerStart
 
@@ -358,17 +347,18 @@ rm -rf port
 
 open http://127.0.0.1:${SHARE_PORT}/share
 
-
 # ------------------------------------------------------------------------------------------------------
 # После успешного запуска сервера, во избежание процесса повторного разворачивания оригинальных war-файлов, настоятельно рекомендуется переименовать либо удалить файлы «alfresco.war» и «share.war» в каталоге «{catalina.home}/webapps». Перед удалением или переименованием файлов «alfresco.war» и «share.war» необходимо предварительно остановить сервер Tomcat.
 # ------------------------------------------------------------------------------------------------------
 
-#tomcatStop
+tomcatStop
 
 mv -v ${CATALINA_HOME}/webapps/alfresco.war ${CATALINA_HOME}/webapps/alf_alfresco.warrr
 mv -v ${CATALINA_HOME}/webapps/share.war ${CATALINA_HOME}/webapps/sh_share.warrr
 
 sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/lecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
 rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
+
+${ALF_HOME}/alfresco.sh start tomcat
 
 echo "${RED} II.4. Обязательная настройка Бизнес-платформы выполнить руками ${NORMAL}"
