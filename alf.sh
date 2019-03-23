@@ -145,7 +145,7 @@ tomcatStop
 # Запускаем postgresql, так как необходимо
 # создать несколько БД.
 #########################################
-echo "${YELLOW}Установка Бизнес-платформы ${NORMAL}"
+echo "${YELLOW}Настройка Бизнес-платформы ${NORMAL}"
 rmCatalinaOut
 ${ALF_HOME}/alfresco.sh start postgresql
 sleep 10s
@@ -192,7 +192,6 @@ ALF_HOST=$(< host)
 
 export PGPASSWORD=${DB_PASS}
 echo "${YELLOW}Создание БД bj${NORMAL}"
-echo "${GREEN}Пароль БД ${PGPASSWORD}${NORMAL}"
 createdb bj --owner alfresco -U postgres
 rm -rf name pass host
 
@@ -217,7 +216,6 @@ cp -R ./alfresco/notificationstore.war ${CATALINA_HOME}/webapps
 
 echo "${YELLOW}Создание БД notifications${NORMAL}"
 export PGPASSWORD=${DB_PASS}
-echo "${GREEN}Пароль БД ${PGPASSWORD}${NORMAL}"
 createdb notifications --owner alfresco -U postgres
 
 if [ `grep -c "notificationstore.datanucleus.dbms=" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
@@ -278,7 +276,6 @@ fi
 echo "${YELLOW}Создание БД reporting${NORMAL}"
 
 export PGPASSWORD=${DB_PASS}
-echo "${GREEN}Пароль БД ${PGPASSWORD}${NORMAL}"
 createdb reporting --owner alfresco -U postgres
 
 if [ `grep -c "reporting.db.name=reporting" ${CATALINA_HOME}/shared/classes/alfresco-global.properties` -eq 0 ]; then
