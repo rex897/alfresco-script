@@ -333,8 +333,8 @@ tomcatStop
 mv -v ${CATALINA_HOME}/webapps/alfresco.war ${CATALINA_HOME}/webapps/alf_alfresco.warrr
 mv -v ${CATALINA_HOME}/webapps/share.war ${CATALINA_HOME}/webapps/sh_share.warrr
 
-sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/lecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
-rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
+# sed -i '.bak' 's/lecm.dictionaries.bootstrapOnStart=true.*/lecm.dictionaries.bootstrapOnStart=false/g' ${CATALINA_HOME}/shared/classes/alfresco-global.properties
+# rm -rf ${CATALINA_HOME}/shared/classes/alfresco-global.properties.bak
 
 ${ALF_HOME}/alfresco.sh start tomcat
 
